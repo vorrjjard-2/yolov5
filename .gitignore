@@ -1,0 +1,143 @@
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Datasets and data files
+datasets/
+data/
+dataset/
+*.csv
+*.tsv
+*.json
+*.jsonl
+*.parquet
+*.h5
+*.hdf5
+*.npz
+*.npy
+*.pkl
+*.pickle
+
+# Model files and checkpoints
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.hdf5
+*.pb
+*.tflite
+*.onnx
+*.torchscript
+*.jit
+*.traced
+*.scripted
+weights/
+checkpoints/
+models/
+saved_models/
+model_zoo/
+pretrained/
+
+# Training outputs
+runs/
+results/
+outputs/
+logs/
+tensorboard/
+mlruns/
+wandb/
+.neptune/
+experiments/
+training_logs/
+
+# Cache directories
+__pycache__/
+.cache/
+.pytest_cache/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Python
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyTorch specific
+lightning_logs/
+*.pth.tar
+
+# TensorFlow specific
+*.tfrecord
+*.tfrecords
+graph.pbtxt
+
+# Hugging Face
+transformers_cache/
+.cache/huggingface/
+
+# MLflow
+mlartifacts/
+
+# Weights & Biases
+wandb/
+
+# Config files with secrets
+.env
+*.env
+config.ini
+secrets.json
+
+# Large files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# Ignore specific YOLOv5 files
+*.yaml
+!yolov5*.yaml
+!data/*.yaml

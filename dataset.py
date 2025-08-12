@@ -13,10 +13,10 @@ from utils import (
     
 )
 
+import cv2
+
 import json
 import os
-
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class YOLODataset(Dataset):
     def __init__(self, 
@@ -41,7 +41,16 @@ class YOLODataset(Dataset):
         raw_bboxes = self.id_annotations[index]
 
         bboxes = normalize_bboxes(raw_bboxes, W, H)
+        image = np.array(cv2.imread(os.path.join(config.DATA_ROOT, config.DATASET, 'train', raw_path)).convert("RGB"))
 
-        image = np.array(Image.open(os.path.join(config.DATA_ROOT, config.DATASET, 'train', raw_path)).convert("RGB"))
+        class_labels = [box[0] for box in bboxes]
+        coords_only = [box[1:] for box in bboxes]
+
+        if self.transform:
+            augmented = self.transform(image=image, bboxes=coords_only, class_labels=class_labels)
+            image = augmented["image"]
+            coords_only = augmented["bboxes"]
+            class_labels = augmented["class_labels"]
+            bboxes = [[cls] + list(coord) for cls, coord in zip(class_labels, coords_only)]
 
         return super().__getitem__(index)

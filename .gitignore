@@ -141,3 +141,6 @@ temp/
 *.yaml
 !yolov5*.yaml
 !data/*.yaml
+
+
+/test

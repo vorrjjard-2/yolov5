@@ -15,10 +15,14 @@ DATASET = 'COCO'
 
 N_CLASSES = 20
 
+#Training Config
+
+BATCH_SIZE = 8
+
 train_transform = A.Compose([
-    A.Mosaic(grid_yx=(2,2), target_size=[IMG_SIZE, IMG_SIZE]),
+    #A.Mosaic(grid_yx=(2,2), target_size=[IMG_SIZE, IMG_SIZE]),
     A.HorizontalFlip(p=0.5),
-    A.Perspective(scale=(0.0, 0.0005), keep_size=True, pad_mode=cv2.BORDER_CONSTANT, pad_val=(114,114,114), p=0.2),
+    #A.Perspective(scale=(0.0, 0.0005), keep_size=True, pad_mode=cv2.BORDER_CONSTANT, pad_val=(114,114,114), p=0.2),
     A.Affine(
         scale=(0.8, 1.2),
         translate_percent=(0.2, 0.2), 
@@ -33,8 +37,8 @@ train_transform = A.Compose([
 
     A.ToTensorV2()
     ],bbox_params=A.BboxParams(
-        format='coco', 
-        label_fields=['labels'],
+        format='yolo', 
+        label_fields=['class_labels'],
         min_area=4
         ,min_visibility=0.1,
         check_each_transform=True

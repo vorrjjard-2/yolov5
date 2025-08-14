@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
-from PIL import Image, ImageFile
+import cv2
 
 def pre_index(annotation_path):
     with open(annotation_path, 'r') as file:
@@ -37,14 +37,19 @@ def pre_index(annotation_path):
     return (id_annotations, id_images, id_categories)
 
 
-def plot_image(img_path, bboxes):
-    img = np.array(Image.open(img_path).convert("RGB"))
+def plot_image(raw_img, bboxes):
+    raw_img = raw_img.permute(1, 2, 0)
+    bboxes = denormalize_bboxes(bboxes, config.IMG_SIZE, config.IMG_SIZE)
+
+    image = np.array(raw_img)
     fig, ax = plt.subplots(1)
 
-    ax.imshow(img)
+    print(image.shape)
+
+    ax.imshow(image)
     for bbox_coords in bboxes:
-        rect = patches.Rectangle((bbox_coords[0], bbox_coords[1]),
-                                bbox_coords[2], bbox_coords[3],
+        rect = patches.Rectangle((bbox_coords[2], bbox_coords[3]),
+                                bbox_coords[4], bbox_coords[5],
                                 linewidth=2, edgecolor='r', facecolor='none')
         ax.add_patch(rect)
 
@@ -52,6 +57,8 @@ def plot_image(img_path, bboxes):
     ax.set_yticks([])
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+
+    print(f'Displaying images with {len(bboxes)} boxes.' )
 
     plt.show()
 
@@ -73,11 +80,12 @@ def normalize_bboxes(raw_bboxes, W, H):
 def denormalize_bboxes(raw_bboxes, W, H):
     denorm_boxes = []
     for box in raw_bboxes:
-        c, x, y, w, h = box 
-        x = x * W 
-        y = y * H 
+        i, c, x, y, w, h = box 
+        x = (x - (w/2)) * W 
+        y = (y - (h / 2)) * H 
         w = w * W 
         h = h * H 
-    
+        denorm_boxes.append([i, c, x, y, w, h])
+
     return denorm_boxes
 

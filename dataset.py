@@ -1,10 +1,9 @@
 import config
 import numpy as np
 import torch
-from PIL import Image, ImageFile
+
 from torch.utils.data import Dataset, DataLoader
 
-from PIL import Image, ImageFile
 
 from utils import (
     pre_index,
@@ -39,9 +38,10 @@ class YOLODataset(Dataset):
         
         raw_path, W, H = self.id_images[index]
         raw_bboxes = self.id_annotations[index]
+       
 
         bboxes = normalize_bboxes(raw_bboxes, W, H)
-        image = np.array(cv2.imread(os.path.join(config.DATA_ROOT, config.DATASET, 'train', raw_path)).convert("RGB"))
+        image = np.array(cv2.cvtColor(cv2.imread(os.path.join(config.DATA_ROOT, config.DATASET, self.split, raw_path)), cv2.COLOR_BGR2RGB))
 
         class_labels = [box[0] for box in bboxes]
         coords_only = [box[1:] for box in bboxes]
@@ -53,4 +53,26 @@ class YOLODataset(Dataset):
             class_labels = augmented["class_labels"]
             bboxes = [[cls] + list(coord) for cls, coord in zip(class_labels, coords_only)]
 
-        return super().__getitem__(index)
+        else:
+            image = torch.from_numpy(image).permute(2, 0, 1).contiguous().float()
+
+        print(bboxes)
+
+        targets = torch.zeros((len(bboxes), 6))
+
+        for i, bbox in enumerate(bboxes):
+            targets[i, :] = torch.tensor(([index] + bbox)) 
+
+        return image, targets, raw_path
+
+
+if __name__ == '__main__':
+
+    YoloV5Dataset = YOLODataset(
+        split='train'
+        ,transform=config.train_transform
+    ) 
+
+    test_img, test_bboxes, _ = YoloV5Dataset[4]
+    print(test_bboxes)
+    plot_image(test_img, test_bboxes)

@@ -63,7 +63,26 @@ class YOLODataset(Dataset):
         for i, bbox in enumerate(bboxes):
             targets[i, :] = torch.tensor(([index] + bbox)) 
 
-        return image, targets, raw_path
+        return (image, targets)
+    
+    def collate_fn(batch_input):
+
+        collate_targets = torch.tensor([])
+
+        images = [item[0] for item in batch_input]
+        img_bboxes = [item[1][1:] for item in batch_input]
+
+        for idx, setbboxes in enumerate(img_bboxes):
+            if setbboxes:
+                continue
+            ELSE:
+
+
+
+
+        collate_images = torch.stack(images, dim=0)
+
+        return collate_images, collate_targets
 
 
 if __name__ == '__main__':

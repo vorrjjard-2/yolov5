@@ -15,12 +15,12 @@ DATASET = 'COCO'
 
 N_CLASSES = 20
 
+
 #Training Config
 
 BATCH_SIZE = 8
 
 train_transform = A.Compose([
-    #A.Mosaic(grid_yx=(2,2), target_size=[IMG_SIZE, IMG_SIZE]),
     A.HorizontalFlip(p=0.5),
     #A.Perspective(scale=(0.0, 0.0005), keep_size=True, pad_mode=cv2.BORDER_CONSTANT, pad_val=(114,114,114), p=0.2),
     A.Affine(
@@ -45,4 +45,15 @@ train_transform = A.Compose([
         )
     )
 
+mosaic_transform = A.Compose([
+    A.Mosaic(grid_yx=(2,2), target_size=[IMG_SIZE, IMG_SIZE]),
+    ],bbox_params=A.BboxParams(
+        format='yolo', 
+        label_fields=['class_labels'],
+        min_area=4
+        ,min_visibility=0.1,
+        check_each_transform=True
+    )
+)
 
+MOSAIC_PROB = 1

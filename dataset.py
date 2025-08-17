@@ -2,6 +2,11 @@ import config
 import numpy as np
 import torch
 
+import collections
+from collections import defaultdict
+
+from numpy import random 
+
 from torch.utils.data import Dataset, DataLoader
 
 
@@ -13,7 +18,6 @@ from utils import (
 )
 
 import cv2
-
 import json
 import os
 
@@ -22,29 +26,53 @@ class YOLODataset(Dataset):
                  split, 
                  S=[13, 26, 52],
                  transform=None
+                 ,mosaic=None
                    ):
         super().__init__()
         self.split = split
         self.S = S
         self.transform = transform
+        self.mosaic = mosaic
         self.id_annotations, self.id_images, self.id_categories = pre_index(
             os.path.join('datasets', config.DATASET, self.split, '_annotations.coco.json')
         )
 
     def __len__(self):
-        return len(self.annotations)
+        return len(self.id_annotations)
     
+    def metadata(self, index):
+        meta_data = defaultdict(str)
+
+        raw_path, W, H = self.id_images[index]
+        raw_bboxes = self.id_annotations[index]
+
+        meta_data['image'] = np.array(cv2.cvtColor(cv2.imread(os.path.join(config.DATA_ROOT, config.DATASET, self.split, raw_path)), cv2.COLOR_BGR2RGB))
+        bboxes = normalize_bboxes(raw_bboxes, W, H)
+
+        meta_data['class_labels'] = [box[0] for box in bboxes]
+        meta_data['bboxes'] = [box[1:] for box in bboxes]
+
+        return meta_data
+
     def __getitem__(self, index):
         
         raw_path, W, H = self.id_images[index]
         raw_bboxes = self.id_annotations[index]
        
-
         bboxes = normalize_bboxes(raw_bboxes, W, H)
         image = np.array(cv2.cvtColor(cv2.imread(os.path.join(config.DATA_ROOT, config.DATASET, self.split, raw_path)), cv2.COLOR_BGR2RGB))
 
         class_labels = [box[0] for box in bboxes]
         coords_only = [box[1:] for box in bboxes]
+
+        if np.random.rand() < config.MOSAIC_PROB:
+            print('applying mosaic!')
+            mosaic_metadata = [self.metadata(np.random.randint(len(self))) for _ in range(3)]
+            augmented = self.mosaic(image=image, bboxes=coords_only, class_labels=class_labels, mosaic_metadata=mosaic_metadata)
+            image = augmented["image"]
+            coords_only = augmented["bboxes"]
+            class_labels = augmented["class_labels"]
+            bboxes = [[cls] + list(coord) for cls, coord in zip(class_labels, coords_only)]
 
         if self.transform:
             augmented = self.transform(image=image, bboxes=coords_only, class_labels=class_labels)
@@ -56,8 +84,6 @@ class YOLODataset(Dataset):
         else:
             image = torch.from_numpy(image).permute(2, 0, 1).contiguous().float()
 
-        print(bboxes)
-
         targets = torch.zeros((len(bboxes), 6))
 
         for i, bbox in enumerate(bboxes):
@@ -67,31 +93,55 @@ class YOLODataset(Dataset):
     
     def collate_fn(batch_input):
 
-        collate_targets = torch.tensor([])
-
         images = [item[0] for item in batch_input]
-        img_bboxes = [item[1][1:] for item in batch_input]
+        collate_images = torch.stack(images, dim=0)
+
+        img_bboxes = [item[1] for item in batch_input]
+        collate_targets = []
 
         for idx, setbboxes in enumerate(img_bboxes):
-            if setbboxes:
+            if setbboxes.numel() > 0: 
+               
+               setbboxes[:, 0] = idx
+               collate_targets.append(setbboxes)
+            else:
                 continue
-            ELSE:
 
-
-
+        if collate_targets:               # make sure it's not empty
+            collate_targets = torch.cat(collate_targets, dim=0)
+        else:
+            collate_targets = torch.zeros((0,6))
 
         collate_images = torch.stack(images, dim=0)
 
         return collate_images, collate_targets
-
-
+    
 if __name__ == '__main__':
 
     YoloV5Dataset = YOLODataset(
         split='train'
+        ,mosaic=config.mosaic_transform
         ,transform=config.train_transform
+        
     ) 
 
-    test_img, test_bboxes, _ = YoloV5Dataset[4]
-    print(test_bboxes)
-    plot_image(test_img, test_bboxes)
+    img, bboxes = YoloV5Dataset[6]
+
+    plot_image(img, bboxes)
+
+    train_loader = DataLoader(
+        YoloV5Dataset,
+        batch_size=config.BATCH_SIZE,
+        shuffle=True,
+        num_workers=4,
+        pin_memory=False,
+        collate_fn=YOLODataset.collate_fn
+    )
+
+    imgs, targets = next(iter(train_loader))
+
+    assert imgs.size() == (config.BATCH_SIZE, 3, config.IMG_SIZE, config.IMG_SIZE)
+    assert targets.size()[1] == 6 
+
+    print('dataset - assertions passed.')
+

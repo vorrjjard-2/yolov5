@@ -1,3 +1,8 @@
 import torch
+from dataset import YOLODataset
+import config
 
-print(torch.tensor([[1] + [2,3,4,5]]))
+YoloV5Dataset = YOLODataset(
+        split='train'
+        ,transform=config.train_transform
+    ) 

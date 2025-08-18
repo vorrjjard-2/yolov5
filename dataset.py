@@ -27,19 +27,37 @@ class YOLODataset(Dataset):
                  S=[13, 26, 52],
                  transform=None
                  ,mosaic=None
+                 ,letterbox=None
                    ):
         super().__init__()
         self.split = split
         self.S = S
         self.transform = transform
         self.mosaic = mosaic
+        self.letterbox = letterbox
         self.id_annotations, self.id_images, self.id_categories = pre_index(
             os.path.join('datasets', config.DATASET, self.split, '_annotations.coco.json')
         )
+        self.epoch = 1
 
     def __len__(self):
         return len(self.id_annotations)
     
+    def setepoch(self, E):
+        self.epoch = E 
+
+    def get_sample(self, index):
+        raw_path, W, H = self.id_images[index]
+        raw_bboxes = self.id_annotations[index]
+
+        image = np.array(cv2.cvtColor(cv2.imread(os.path.join(config.DATA_ROOT, config.DATASET, self.split, raw_path)), cv2.COLOR_BGR2RGB))
+        bboxes = normalize_bboxes(raw_bboxes, W, H)
+
+        class_labels = [box[0] for box in bboxes]
+        bboxes = [box[1:] for box in bboxes]
+
+        return image, bboxes, class_labels
+
     def metadata(self, index):
         meta_data = defaultdict(str)
 
@@ -55,7 +73,7 @@ class YOLODataset(Dataset):
         return meta_data
 
     def __getitem__(self, index):
-        
+        mixup = 0 
         raw_path, W, H = self.id_images[index]
         raw_bboxes = self.id_annotations[index]
        
@@ -65,7 +83,23 @@ class YOLODataset(Dataset):
         class_labels = [box[0] for box in bboxes]
         coords_only = [box[1:] for box in bboxes]
 
-        if np.random.rand() < config.MOSAIC_PROB:
+        n = np.random.rand()
+        if n <  config.MIXUP:
+
+            img_b, bboxes_b, labels_b = self.get_sample(np.random.randint(len(self)))
+            augmented_a = self.letterbox(image=image, bboxes=coords_only, class_labels=class_labels)
+            augmented_b = self.letterbox(image=img_b, bboxes=bboxes_b, class_labels=labels_b)
+
+            image, bboxes, class_labels = augmented_a["image"], augmented_a["bboxes"], augmented_a["class_labels"]
+            img_b, bboxes_b, labels_b = augmented_b["image"], augmented_b["bboxes"], augmented_b["class_labels"]
+
+            r = np.random.beta(32.0, 32.0)
+            image = (image * r + img_b * (1 - r)).astype(np.uint8)
+            coords_only = np.concat((bboxes, bboxes_b), 0)
+            class_labels = np.concat((class_labels, labels_b), 0) 
+            bboxes = [[cls] + list(coord) for cls, coord in zip(class_labels, coords_only)]
+
+        elif mixup == 0 and n < config.MOSAIC_PROB:
             print('applying mosaic!')
             mosaic_metadata = [self.metadata(np.random.randint(len(self))) for _ in range(3)]
             augmented = self.mosaic(image=image, bboxes=coords_only, class_labels=class_labels, mosaic_metadata=mosaic_metadata)
@@ -122,7 +156,7 @@ if __name__ == '__main__':
         split='train'
         ,mosaic=config.mosaic_transform
         ,transform=config.train_transform
-        
+        ,letterbox=config.letterbox        
     ) 
 
     img, bboxes = YoloV5Dataset[6]
@@ -144,4 +178,3 @@ if __name__ == '__main__':
     assert targets.size()[1] == 6 
 
     print('dataset - assertions passed.')
-

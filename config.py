@@ -18,7 +18,7 @@ N_CLASSES = 20
 
 #Training Config
 
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 
 # Augmentations
 

@@ -13,7 +13,8 @@ from torch.utils.data import Dataset, DataLoader
 from utils import (
     pre_index,
     plot_image,
-    normalize_bboxes
+    normalize_bboxes,
+    coerce_shapes
     
 )
 
@@ -95,18 +96,23 @@ class YOLODataset(Dataset):
 
             r = np.random.beta(32.0, 32.0)
             image = (image * r + img_b * (1 - r)).astype(np.uint8)
+
+            bboxes, class_labels = coerce_shapes(bboxes, class_labels)
+            bboxes_b, labels_b = coerce_shapes(bboxes_b, labels_b)
+
             coords_only = np.concat((bboxes, bboxes_b), 0)
             class_labels = np.concat((class_labels, labels_b), 0) 
             bboxes = [[cls] + list(coord) for cls, coord in zip(class_labels, coords_only)]
 
         elif mixup == 0 and n < config.MOSAIC_PROB:
-            print('applying mosaic!')
             mosaic_metadata = [self.metadata(np.random.randint(len(self))) for _ in range(3)]
             augmented = self.mosaic(image=image, bboxes=coords_only, class_labels=class_labels, mosaic_metadata=mosaic_metadata)
             image = augmented["image"]
             coords_only = augmented["bboxes"]
             class_labels = augmented["class_labels"]
             bboxes = [[cls] + list(coord) for cls, coord in zip(class_labels, coords_only)]
+
+            bboxes, class_labels = coerce_shapes(bboxes, class_labels)
 
         if self.transform:
             augmented = self.transform(image=image, bboxes=coords_only, class_labels=class_labels)
@@ -115,8 +121,13 @@ class YOLODataset(Dataset):
             class_labels = augmented["class_labels"]
             bboxes = [[cls] + list(coord) for cls, coord in zip(class_labels, coords_only)]
 
+
+
         else:
             image = torch.from_numpy(image).permute(2, 0, 1).contiguous().float()
+
+        print(np.array(image).shape, np.array(coords_only).shape, np.array(class_labels).shape)
+
 
         targets = torch.zeros((len(bboxes), 6))
 
@@ -161,8 +172,6 @@ if __name__ == '__main__':
 
     img, bboxes = YoloV5Dataset[6]
 
-    plot_image(img, bboxes)
-
     train_loader = DataLoader(
         YoloV5Dataset,
         batch_size=config.BATCH_SIZE,
@@ -175,6 +184,9 @@ if __name__ == '__main__':
     imgs, targets = next(iter(train_loader))
 
     assert imgs.size() == (config.BATCH_SIZE, 3, config.IMG_SIZE, config.IMG_SIZE)
+    print('Dataset - Test 1 Passed')
     assert targets.size()[1] == 6 
+    print('Dataset - Test 2 Passed')
 
-    print('dataset - assertions passed.')
+
+

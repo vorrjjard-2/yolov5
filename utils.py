@@ -89,4 +89,21 @@ def denormalize_bboxes(raw_bboxes, W, H):
 
     return denorm_boxes
 
+def coerce_shapes(bboxes, labels):
+    bboxes = np.asarray(bboxes, dtype=np.float32)
+    labels = np.asarray(labels)
 
+    if bboxes.ndim == 1:
+        if bboxes.size == 0:
+            bboxes = bboxes.reshape(0, 4)
+        else:
+            bboxes = bboxes.reshape(1, 4)
+
+    labels = labels.astype(np.int64)
+    if labels.ndim == 0:
+        labels = labels.reshape(1,)
+    elif labels.ndim > 1:
+        labels = labels.reshape(-1,)
+
+    assert bboxes.shape[0] == labels.shape[0], f"Mismatch: {bboxes.shape} vs {labels.shape}"
+    return bboxes, labels

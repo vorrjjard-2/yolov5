@@ -15,7 +15,6 @@ DATASET = 'COCO'
 
 N_CLASSES = 20
 
-
 #Training Config
 
 BATCH_SIZE = 16

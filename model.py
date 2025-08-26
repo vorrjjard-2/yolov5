@@ -17,6 +17,8 @@ class Bottleneck(nn.Module):
 class C3(nn.Module):
     def __init__(self, c_in, c_out, n=1, e=0.5, shortcut=True):
         super().__init__()
+        self.c_ = c_in * e
+        
         
     def forward(self, x):
         return x

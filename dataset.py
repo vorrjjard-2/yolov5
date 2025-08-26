@@ -22,7 +22,7 @@ import cv2
 import json
 import os
 
-class YOLODataset(Dataset):
+class YOLODataset(Dataset): 
     def __init__(self, 
                  split, 
                  S=[13, 26, 52],
@@ -77,7 +77,7 @@ class YOLODataset(Dataset):
         mixup = 0 
         raw_path, W, H = self.id_images[index]
         raw_bboxes = self.id_annotations[index]
-       
+
         bboxes = normalize_bboxes(raw_bboxes, W, H)
         image = np.array(cv2.cvtColor(cv2.imread(os.path.join(config.DATA_ROOT, config.DATASET, self.split, raw_path)), cv2.COLOR_BGR2RGB))
 
@@ -121,13 +121,10 @@ class YOLODataset(Dataset):
             class_labels = augmented["class_labels"]
             bboxes = [[cls] + list(coord) for cls, coord in zip(class_labels, coords_only)]
 
-
-
         else:
             image = torch.from_numpy(image).permute(2, 0, 1).contiguous().float()
 
         print(np.array(image).shape, np.array(coords_only).shape, np.array(class_labels).shape)
-
 
         targets = torch.zeros((len(bboxes), 6))
 
@@ -187,6 +184,3 @@ if __name__ == '__main__':
     print('Dataset - Test 1 Passed')
     assert targets.size()[1] == 6 
     print('Dataset - Test 2 Passed')
-
-
-

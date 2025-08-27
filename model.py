@@ -11,8 +11,13 @@ class Conv(nn.Module):
 class Bottleneck(nn.Module):
     def __init__(self, c_in, c_out, e=0.5, shortcut=True, g=1):
         super().__init__()
+        c_ = int(c_in * e)
+        self.cv1 = Conv(c_in, c_, 1, 1, None) #reduce dimensionality first
+        self.cv2 = Conv(c_, c_out, 3, 1, None, g=g) #heavy lifting, project back to original dims (or close)
+        self.add = shortcut and c_in == c_out 
+
     def forward(self, x):
-        return x
+        return self.cv2(self.cv1(x)) + x if self.add else self.cv2(self.cv1(x))
 
 class C3(nn.Module):
     def __init__(self, c_in, c_out, n=1, e=0.5, shortcut=True):

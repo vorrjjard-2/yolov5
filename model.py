@@ -23,10 +23,16 @@ class C3(nn.Module):
     def __init__(self, c_in, c_out, n=1, e=0.5, shortcut=True):
         super().__init__()
         self.c_ = c_in * e
+        self.conv1 = Conv(c_in, c_, k=1, s=1)
+        self.conv2 = Conv(c_in, c_, k=1, s=1)
+        self.conv3 = Conv(2 * c_in, c_out, 1, 1)
+        self.d = nn.Sequential([
+            *(Bottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n)) # needs more research, why is e=1?
+        ]) 
         
         
     def forward(self, x):
-        return x
+        return self.conv3(torch.cat((self.d(self.conv1(x)), self.conv2(x))), dim=1) #needs more research tomrorrow
 
 class SPPF(nn.Module):
     def __init__(self, c_in, c_out, k=5):

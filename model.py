@@ -29,8 +29,7 @@ class C3(nn.Module):
         self.d = nn.Sequential([
             *(Bottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n)) # needs more research, why is e=1?
         ]) 
-        
-        
+
     def forward(self, x):
         return self.conv3(torch.cat((self.d(self.conv1(x)), self.conv2(x))), dim=1) #needs more research tomrorrow
 

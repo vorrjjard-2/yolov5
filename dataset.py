@@ -1,6 +1,9 @@
 import config
 import numpy as np
 import torch
+import cv2
+import json
+import os
 
 import collections
 from collections import defaultdict
@@ -18,9 +21,7 @@ from utils import (
     
 )
 
-import cv2
-import json
-import os
+
 
 class YOLODataset(Dataset): 
     def __init__(self, 
@@ -134,7 +135,6 @@ class YOLODataset(Dataset):
         return (image, targets)
     
     def collate_fn(batch_input):
-
         images = [item[0] for item in batch_input]
         collate_images = torch.stack(images, dim=0)
 
